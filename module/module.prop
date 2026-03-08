@@ -1,0 +1,6 @@
+id=bpm_injector
+name=BPM Injector
+version=v1.0
+versionCode=1
+author=YourName
+description=Zygisk module for com.skullcapstudios.bpm
