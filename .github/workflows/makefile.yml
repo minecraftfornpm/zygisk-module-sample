@@ -1,0 +1,41 @@
+name: Build Zygisk Module
+
+on:
+  push:
+    branches: [ "master" ]
+  workflow_dispatch:  # Позволяет запускать сборку вручную
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      
+    - name: Set up NDK
+      run: |
+        wget https://dl.google.com/android/repository/android-ndk-r25c-linux.zip
+        unzip android-ndk-r25c-linux.zip
+        echo "ANDROID_NDK_HOME=$GITHUB_WORKSPACE/android-ndk-r25c" >> $GITHUB_ENV
+        echo "$GITHUB_WORKSPACE/android-ndk-r25c" >> $GITHUB_PATH
+    
+    - name: Build with ndk-build
+      run: |
+        cd module
+        $ANDROID_NDK_HOME/ndk-build
+        
+    - name: Prepare module zip
+      run: |
+        mkdir -p output/zygisk
+        cp module/libs/arm64-v8a/libbpm_injector.so output/zygisk/arm64-v8a.so
+        cp module/module.prop output/
+        cp -r module/META-INF output/
+        cd output
+        zip -r ../bpm-injector.zip *
+        
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: bpm-injector-module
+        path: bpm-injector.zip
