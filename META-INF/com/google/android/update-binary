@@ -1,0 +1,59 @@
+#!/sbin/sh
+
+#################
+# Initialization
+#################
+
+umask 022
+
+# echo before loading util_functions
+ui_print() { echo "$1"; }
+
+require_new_android() {
+  ui_print "*******************************"
+  ui_print " Please install Android 6.0+ "
+  ui_print "*******************************"
+  exit 1
+}
+
+#########################
+# Load util_functions.sh
+#########################
+
+OUTFD=$2
+ZIPFILE=$3
+
+mount /data 2>/dev/null
+
+[ -f /data/adb/magisk/util_functions.sh ] || require_new_android
+. /data/adb/magisk/util_functions.sh
+[ $API -lt 23 ] && require_new_android
+
+ui_print "*******************************"
+ui_print "    BPM Injector Module"
+ui_print "*******************************"
+
+# Setup busybox and binaries
+$BOOTMODE && boot_actions || recovery_actions
+
+# Extract files to module directory
+ui_print "- Extracting module files"
+unzip -o "$ZIPFILE" -x 'META-INF/*' -d $MODPATH 2>/dev/null
+
+# Set permissions
+set_perm_recursive $MODPATH 0 0 0755 0644
+
+# Handle replace folders
+for TARGET in $REPLACE; do
+  ui_print "- Replace target: $TARGET"
+  mktouch $MODPATH$TARGET/.replace
+done
+
+# Finalize
+ui_print "- Setting permissions"
+set_permissions
+
+# Complete installation
+$BOOTMODE && recovery_cleanup
+ui_print "- Installation complete"
+exit 0
